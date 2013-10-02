@@ -1,0 +1,152 @@
+<html>
+	<head>
+		<canvas id="canvas" style="border: 1px solid #ccc;" width="512" height="512"></canvas>
+		<script src="Box2dWeb-2.1.a.3.js"></script>
+	</head>
+</html>
+
+<script>
+	var canvas = document.getElementById("canvas");
+	var context = canvas.getContext("2d");
+	var cx = canvas.width / 4,
+    	cy = canvas.height / 2
+
+  var scale = 100
+    	
+	var b2Vec2 = Box2D.Common.Math.b2Vec2,
+			b2BodyDef = Box2D.Dynamics.b2BodyDef,
+			b2Body = Box2D.Dynamics.b2Body,
+			b2FixtureDef = Box2D.Dynamics.b2FixtureDef,
+			b2Fixture = Box2D.Dynamics.b2Fixture,
+			b2World = Box2D.Dynamics.b2World,
+			b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape,
+			b2CircleShape = Box2D.Collision.Shapes.b2CircleShape,
+			b2Shape = Box2D.Collision.Shapes.b2Shape,
+			b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
+
+	var gravity = new b2Vec2(1, 0);
+	var doSleep = true;
+  var world = new b2World(gravity, doSleep);
+
+  var debugDraw = new b2DebugDraw();
+  debugDraw.SetSprite(context);
+  debugDraw.SetDrawScale(1);
+  debugDraw.SetFillAlpha(0.3);
+  debugDraw.SetLineThickness(1.0);
+  debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
+  world.SetDebugDraw(debugDraw);
+
+  var bodyDef = new b2BodyDef;
+  var fixDef = new b2FixtureDef;
+  bodyDef.type = b2Body.b2_staticBody;
+  fixDef.shape = new b2PolygonShape;
+  fixDef.shape.SetAsEdge({x: 0, y: canvas.width}, {x: canvas.width, y: canvas.width});
+  world.CreateBody(bodyDef).CreateFixture(fixDef);
+  fixDef.shape.SetAsEdge({x: 0, y: 0}, {x: canvas.width, y: 0});
+  world.CreateBody(bodyDef).CreateFixture(fixDef);
+  fixDef.shape.SetAsEdge({x: 0, y: 0}, {x: 0, y: canvas.width});
+  world.CreateBody(bodyDef).CreateFixture(fixDef);
+  fixDef.shape.SetAsEdge({x: canvas.width, y: canvas.width}, {x: canvas.width, y: 0});
+  world.CreateBody(bodyDef).CreateFixture(fixDef);
+
+	var Player = function() {
+		var context = this;
+		window.addEventListener('keydown',function(e){
+			context.way = e.keyCode;
+		},false);
+
+		window.addEventListener('keyup',function(e){
+			context.way = 0;
+		},false);
+
+		this.body = rectangle(cx, cy);
+	};
+
+	Player.prototype.update = function() {
+		switch(this.way){
+			case 37: // LEFT
+				this.body.SetLinearVelocity(new b2Vec2(cx * -50, cy));
+      break;
+      case 39: // RIGHT
+        this.body.SetLinearVelocity(new b2Vec2(cx * 50, cy));
+      break;
+      case 38: // UP
+        this.body.SetLinearVelocity(new b2Vec2(cx, cy * -50));
+      break;
+      case 40: // DOWN
+        this.body.SetLinearVelocity(new b2Vec2(cx, cy * 50));
+      break;
+		};
+	};
+
+	Player.prototype.draw = function(){
+		box(this.body.GetPosition().x, this.body.GetPosition().y);
+	};
+
+	function box(x, y) {
+		context.save();
+		context.clearRect(0, 0, canvas.width, canvas.height);
+  	context.translate(x, y);
+  	context.fillStyle = "red"
+  	context.fillRect(-25, -25, 50, 50);
+  	context.restore();
+	};
+
+	function rectangle(x, y) {
+		var width = 25;
+		var height = 25;
+
+		var options = {'linearDamping' : 10 , 'angularDamping' : 10,
+        'density' : 1.0 ,
+        'friction' : 0.4,
+        'restitution' : 0.2 ,
+         
+        'gravityScale' : 1.0 ,
+        'type' : b2Body.b2_dynamicBody
+    };
+     
+    var body_def = new b2BodyDef();
+    var fix_def = new b2FixtureDef;
+     
+    fix_def.density = options.density;
+    fix_def.friction = options.friction;
+    fix_def.restitution = options.restitution;
+     
+    fix_def.shape = new b2PolygonShape();
+     
+    fix_def.shape.SetAsBox( width , height );
+     
+    body_def.position.Set(x, y);
+     
+    body_def.linearDamping = options.linearDamping;
+    body_def.angularDamping = options.angularDamping;
+     
+    body_def.type = options.type;
+     
+    var b = world.CreateBody( body_def );
+    var f = b.CreateFixture(fix_def);
+
+    return b;
+	}
+
+	var player = new Player();
+
+	var eachFrame = function(callback) {
+		var animate = function() {
+			world.DrawDebugData();
+			world.Step(1 / 60, 10, 10);
+			world.ClearForces();
+
+			callback.call();
+			
+			requestAnimationFrame(animate);
+		};
+
+	  requestAnimationFrame(animate);
+	};
+
+	eachFrame(function(){
+		player.update();
+		player.draw();
+	});
+</script>
